@@ -1,0 +1,48 @@
+procs:
+  start:
+    title: stop-all, build, then start daemon
+    shell: "OMNI_RUNTIME_DIR=.run ./scripts/mprocs-start.sh"
+    stop: SIGINT
+    autostart: false
+
+  start-transcribe:
+    title: stop-all, build, start daemon, then transcribe (live)
+    shell: "OMNI_RUNTIME_DIR=.run ./scripts/mprocs-start-transcribe.sh"
+    stop: SIGINT
+    autostart: false
+
+  stop:
+    title: stop all local omni processes
+    shell: "OMNI_RUNTIME_DIR=.run ./scripts/mprocs-stop-all.sh"
+    stop: SIGINT
+    autostart: false
+
+  status:
+    title: daemon status
+    shell: "OMNI_RUNTIME_DIR=.run target/debug/omni status --json"
+    stop: SIGINT
+    autostart: false
+
+  ui:
+    title: transcription ui client
+    shell: "OMNI_RUNTIME_DIR=.run target/debug/omni-transcribe-ui --idle-ms 600000 --hide-ms 250 --retry-ms 120"
+    stop: SIGINT
+    autostart: false
+
+  ui_tail:
+    title: ui event tail
+    shell: "bash -lc 'R=${OMNI_RUNTIME_DIR:-.run}; while [ ! -S \"$R/ui.sock\" ]; do sleep 0.25; done; OMNI_RUNTIME_DIR=\"$R\" target/debug/omni-ui-tail --wait'"
+    stop: SIGINT
+    autostart: false
+
+  transcribe-start:
+    title: transcribe start (bg)
+    shell: "OMNI_RUNTIME_DIR=.run target/debug/omni transcribe start --background --json && OMNI_RUNTIME_DIR=.run target/debug/omni transcribe status --json"
+    stop: SIGINT
+    autostart: false
+
+  transcribe-stop:
+    title: transcribe stop
+    shell: "OMNI_RUNTIME_DIR=.run target/debug/omni transcribe stop --json"
+    stop: SIGINT
+    autostart: false
