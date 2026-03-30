@@ -1,0 +1,42 @@
+{
+  "name": "@ahkohd/omni",
+  "version": "0.1.0",
+  "description": "A CLI for realtime transcription.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahkohd/omni.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ahkohd/omni/issues"
+  },
+  "homepage": "https://github.com/ahkohd/omni#readme",
+  "type": "commonjs",
+  "bin": {
+    "omni": "bin/omni.js",
+    "omni-transcribe-ui": "bin/omni-transcribe-ui.js",
+    "omni-ui-tail": "bin/omni-ui-tail.js"
+  },
+  "files": [
+    "bin/*.js",
+    "lib/*.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@ahkohd/omni-darwin-arm64": "0.1.0",
+    "@ahkohd/omni-darwin-x64": "0.1.0",
+    "@ahkohd/omni-linux-x64-gnu": "0.1.0",
+    "@ahkohd/omni-win32-x64-msvc": "0.1.0"
+  },
+  "scripts": {
+    "pack:dry": "npm pack --dry-run",
+    "version:sync": "node scripts/sync-npm-version.cjs"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

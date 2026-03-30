@@ -1,0 +1,10 @@
+# macOS local toolchain compatibility
+#
+# On this machine, `cc` resolves to nix gcc by default, which causes Rust link
+# failures (`-liconv` not found) for `cargo run`/`cargo test`.
+#
+# Pin the Rust linker to Apple clang for aarch64-darwin so commands work
+# without requiring ad-hoc `RUSTFLAGS='-C linker=clang'`.
+
+[target.aarch64-apple-darwin]
+linker = "clang"

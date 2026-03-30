@@ -1,0 +1,29 @@
+{
+  "name": "@ahkohd/omni-linux-x64-gnu",
+  "version": "0.1.0",
+  "description": "Prebuilt binaries for @ahkohd/omni (linux x64 glibc)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahkohd/omni.git"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "files": [
+    "bin/omni",
+    "bin/omni-transcribe-ui",
+    "bin/omni-ui-tail",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

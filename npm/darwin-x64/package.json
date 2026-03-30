@@ -1,0 +1,26 @@
+{
+  "name": "@ahkohd/omni-darwin-x64",
+  "version": "0.1.0",
+  "description": "Prebuilt binaries for @ahkohd/omni (darwin x64)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahkohd/omni.git"
+  },
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin/omni",
+    "bin/omni-transcribe-ui",
+    "bin/omni-ui-tail",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

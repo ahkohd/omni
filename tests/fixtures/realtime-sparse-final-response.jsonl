@@ -1,0 +1,4 @@
+{"type":"session.created"}
+{"type":"transcription.delta","delta":""}
+{"type":"response.output_item.done","item":{"content":[{"type":"output_text","text":"hello from sparse final"}]}}
+{"type":"response.done","response":{"status":"completed"}}

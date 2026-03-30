@@ -1,0 +1,5 @@
+{"type":"session.created"}
+{"type":"transcription.delta","delta":""}
+{"type":"transcription.delta","delta":""}
+{"type":"transcription.done","text":""}
+{"type":"error","code":"unknown_event","error":"Unknown event type: response.create","event_id":"evt_unknown_001"}

@@ -1,0 +1,26 @@
+{
+  "name": "@ahkohd/omni-win32-x64-msvc",
+  "version": "0.1.0",
+  "description": "Prebuilt binaries for @ahkohd/omni (win32 x64 msvc)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahkohd/omni.git"
+  },
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin/omni.exe",
+    "bin/omni-transcribe-ui.exe",
+    "bin/omni-ui-tail.exe",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

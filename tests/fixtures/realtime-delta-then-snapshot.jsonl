@@ -1,0 +1,5 @@
+{"type":"session.created"}
+{"type":"transcription.delta","delta":"hello"}
+{"type":"transcription.delta","delta":" "}
+{"type":"transcription.delta","delta":"world"}
+{"type":"response.done","response":{"status":"completed","output":[{"content":[{"type":"output_text","text":"hello world"}]}]}}
