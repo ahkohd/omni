@@ -36,7 +36,7 @@ pub fn apply_event(
     state: &mut UiState,
     event: UiEventEnvelope,
     now: Instant,
-    hide_linger: Duration,
+    _hide_linger: Duration,
 ) {
     match event.event_type.as_str() {
         "ui.show" | "transcribe.started" => show(state, now),
@@ -51,8 +51,7 @@ pub fn apply_event(
                 set_transcript(state, transcript);
             }
 
-            state.visibility.hide_deadline = Some(now + hide_linger);
-            state.visibility.visible = true;
+            hide_immediately(state, now);
         }
         "audio.energy" => {
             state.audio.rms = event
@@ -117,6 +116,12 @@ pub fn show(state: &mut UiState, now: Instant) {
     state.last_frame = now;
 }
 
+pub fn hide_immediately(state: &mut UiState, now: Instant) {
+    state.visibility.visible = false;
+    state.visibility.hide_deadline = Some(now);
+    state.visibility.panel_opacity = 0.0;
+}
+
 pub fn set_transcript(state: &mut UiState, text: &str) {
     let trimmed = text.trim();
     if trimmed.is_empty() {
@@ -161,10 +166,12 @@ mod tests {
     }
 
     #[test]
-    fn hide_event_sets_deadline_without_immediate_hide() {
+    fn hide_event_hides_immediately() {
         let now = Instant::now();
         let mut state = UiState::new(now, Duration::from_secs(5), 40.0);
         let hide_linger = Duration::from_millis(250);
+        state.visibility.visible = true;
+        state.visibility.panel_opacity = 1.0;
 
         apply_message(
             &mut state,
@@ -179,9 +186,10 @@ mod tests {
             hide_linger,
         );
 
-        assert!(state.visibility.visible);
+        assert!(!state.visibility.visible);
         assert_eq!(state.transcript.text, "done");
-        assert_eq!(state.visibility.hide_deadline, Some(now + hide_linger));
+        assert_eq!(state.visibility.hide_deadline, Some(now));
+        assert_eq!(state.visibility.panel_opacity, 0.0);
     }
 
     #[test]

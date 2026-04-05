@@ -1194,6 +1194,13 @@ fn handle_transcribe_stop(
         });
     };
 
+    ui_ipc::emit_event(
+        "ui.hide",
+        serde_json::json!({
+            "mode": mode,
+        }),
+    );
+
     let (resolution, duration_ms, debug) = match active {
         ActiveRecording::Synthetic {
             transcript,
