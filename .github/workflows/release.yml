@@ -104,16 +104,6 @@ jobs:
           git push origin "HEAD:${BRANCH}"
           git push origin "v${{ steps.version.outputs.new }}"
 
-      - name: Publish omni-transcribe crate
-        if: ${{ !inputs.dry_run }}
-        run: cargo publish
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
-      - name: Wait for crates.io index
-        if: ${{ !inputs.dry_run }}
-        run: sleep 30
-
       - name: Dry run summary
         if: ${{ inputs.dry_run }}
         run: |
@@ -121,14 +111,13 @@ jobs:
           echo "- Current version: ${{ steps.version.outputs.current }}" >> $GITHUB_STEP_SUMMARY
           echo "- New version: ${{ steps.version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
           echo "- Would commit, tag, and push v${{ steps.version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Would publish omni-transcribe to crates.io" >> $GITHUB_STEP_SUMMARY
+          echo "- Crates.io publish disabled for now" >> $GITHUB_STEP_SUMMARY
           echo "- Would publish npm packages:" >> $GITHUB_STEP_SUMMARY
           echo "  - @ahkohd/omni-darwin-arm64@${{ steps.version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
           echo "  - @ahkohd/omni-darwin-x64@${{ steps.version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
           echo "  - @ahkohd/omni-linux-x64-gnu@${{ steps.version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
           echo "  - @ahkohd/omni-win32-x64-msvc@${{ steps.version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
           echo "  - @ahkohd/omni@${{ steps.version.outputs.new }}" >> $GITHUB_STEP_SUMMARY
-          cargo publish --dry-run --allow-dirty
           npm publish --dry-run --access public
 
   build:

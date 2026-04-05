@@ -1,7 +1,6 @@
 # omni
 
 [![npm version](https://img.shields.io/npm/v/@ahkohd/omni.svg)](https://www.npmjs.com/package/@ahkohd/omni)
-[![crates.io](https://img.shields.io/crates/v/omni-transcribe.svg)](https://crates.io/crates/omni-transcribe)
 
 A CLI for realtime transcription.
 
@@ -13,9 +12,6 @@ npm i -g @ahkohd/omni
 
 # homebrew (macOS, WSL)
 brew install ahkohd/tap/omni
-
-# cargo (macOS, Linux, WSL)
-cargo install omni-transcribe --force --locked
 
 # verify
 omni --version
