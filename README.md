@@ -34,7 +34,10 @@ omni stop
 omni streams audio to any server that speaks the OpenAI Realtime protocol.
 
 Known compatible options:
-- [vLLM](https://docs.vllm.ai/) — `vllm serve mistralai/Voxtral-Mini-4B-Realtime-2602`
+- [vLLM](https://docs.vllm.ai/) — recommended with [`mistralai/Voxtral-Mini-4B-Realtime-2602`](https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602):
+  ```bash
+  vllm serve mistralai/Voxtral-Mini-4B-Realtime-2602 --served-model-name voxtral
+  ```
 - [LocalAI](https://localai.io/features/openai-realtime/)
 - [Speaches](https://speaches.ai/) — OpenAI-compatible realtime server with transcription-only mode
 - OpenAI API
@@ -44,6 +47,12 @@ Known compatible options:
 ```bash
 omni config set server.baseUrl http://127.0.0.1:8000/v1
 omni config set server.model voxtral
+```
+
+If you don't use `--served-model-name voxtral`, set the full model id instead:
+
+```bash
+omni config set server.model mistralai/Voxtral-Mini-4B-Realtime-2602
 ```
 
 ### Cloud example
