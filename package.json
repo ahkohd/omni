@@ -1,6 +1,6 @@
 {
   "name": "@ahkohd/omni",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A CLI for realtime transcription.",
   "license": "MIT",
   "repository": {
@@ -26,10 +26,10 @@
     "node": ">=18"
   },
   "optionalDependencies": {
-    "@ahkohd/omni-darwin-arm64": "0.1.0",
-    "@ahkohd/omni-darwin-x64": "0.1.0",
-    "@ahkohd/omni-linux-x64-gnu": "0.1.0",
-    "@ahkohd/omni-win32-x64-msvc": "0.1.0"
+    "@ahkohd/omni-darwin-arm64": "0.1.1",
+    "@ahkohd/omni-darwin-x64": "0.1.1",
+    "@ahkohd/omni-linux-x64-gnu": "0.1.1",
+    "@ahkohd/omni-win32-x64-msvc": "0.1.1"
   },
   "scripts": {
     "pack:dry": "npm pack --dry-run",
