@@ -1,4 +1,6 @@
 use std::ffi::OsStr;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
@@ -11,6 +13,8 @@ use crate::clipboard::ClipboardSession;
 const HOOK_TIMEOUT: Duration = Duration::from_secs(2);
 const UI_CLIENT_OVERRIDE_ENV: &str = "OMNI_TRANSCRIBE_UI_BIN";
 const UI_CLIENT_BINARY_NAME: &str = "omni-transcribe-ui";
+const UI_CLIENT_PID_FILE: &str = "transcribe-ui.pid";
+const HOOK_LOG_FILE: &str = "hooks.log";
 
 #[derive(Debug, Clone)]
 pub struct HookExecutionResult {
@@ -170,7 +174,9 @@ fn execute_actions(
         match action.as_str() {
             "show_ui" => {
                 if let Err(error) = ensure_default_ui_client_running() {
-                    eprintln!("omni show_ui: failed to start ui client: {error:#}");
+                    let message = format!("omni show_ui: failed to start ui client: {error:#}");
+                    eprintln!("{message}");
+                    append_hook_log(&message);
                 }
 
                 crate::ui_ipc::emit_event(
@@ -207,6 +213,12 @@ fn execute_actions(
 }
 
 fn ensure_default_ui_client_running() -> Result<()> {
+    if let Ok(runtime_dir) = resolve_runtime_dir()
+        && ui_client_is_running(&runtime_dir)
+    {
+        return Ok(());
+    }
+
     if let Some(override_value) = std::env::var_os(UI_CLIENT_OVERRIDE_ENV) {
         let trimmed = override_value.to_string_lossy().trim().to_string();
         if !trimmed.is_empty() {
@@ -296,6 +308,119 @@ fn current_exe_sibling(binary_name: &str) -> Option<PathBuf> {
     } else {
         None
     }
+}
+
+fn append_hook_log(message: &str) {
+    let Ok(runtime_dir) = resolve_runtime_dir() else {
+        return;
+    };
+
+    let _ = fs::create_dir_all(&runtime_dir);
+    let path = runtime_dir.join(HOOK_LOG_FILE);
+
+    let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) else {
+        return;
+    };
+
+    let now_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0);
+
+    let _ = writeln!(file, "[{now_ms}] {message}");
+}
+
+fn resolve_runtime_dir() -> Result<PathBuf> {
+    if let Ok(custom) = std::env::var("OMNI_RUNTIME_DIR") {
+        let trimmed = custom.trim();
+        if !trimmed.is_empty() {
+            return Ok(PathBuf::from(trimmed));
+        }
+    }
+
+    if let Ok(xdg_runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {
+        let trimmed = xdg_runtime_dir.trim();
+        if !trimmed.is_empty() {
+            return Ok(Path::new(trimmed).join("omni"));
+        }
+    }
+
+    let home =
+        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("failed to resolve home directory"))?;
+    Ok(home.join(".local").join("state").join("omni"))
+}
+
+fn ui_client_pid_path(runtime_dir: &Path) -> PathBuf {
+    runtime_dir.join(UI_CLIENT_PID_FILE)
+}
+
+fn ui_client_is_running(runtime_dir: &Path) -> bool {
+    let pid_path = ui_client_pid_path(runtime_dir);
+    let Some(pid) = read_ui_client_pid(&pid_path) else {
+        let _ = fs::remove_file(&pid_path);
+        return false;
+    };
+
+    if is_ui_client_process(pid) {
+        return true;
+    }
+
+    let _ = fs::remove_file(&pid_path);
+    false
+}
+
+fn read_ui_client_pid(path: &Path) -> Option<u32> {
+    let raw = fs::read_to_string(path).ok()?;
+    raw.trim().parse::<u32>().ok()
+}
+
+fn is_ui_client_process(pid: u32) -> bool {
+    let Some((state, command)) = process_snapshot(pid) else {
+        return false;
+    };
+
+    if state.contains('Z') {
+        return false;
+    }
+
+    if command.contains(UI_CLIENT_BINARY_NAME) {
+        return true;
+    }
+
+    let Some(override_value) = std::env::var_os(UI_CLIENT_OVERRIDE_ENV) else {
+        return false;
+    };
+
+    let override_path = Path::new(override_value.as_os_str());
+    let Some(file_name) = override_path.file_name().and_then(|name| name.to_str()) else {
+        return false;
+    };
+
+    !file_name.is_empty() && command.contains(file_name)
+}
+
+fn process_snapshot(pid: u32) -> Option<(String, String)> {
+    let pid_text = pid.to_string();
+    let output = Command::new("ps")
+        .args(["-o", "stat=", "-o", "command=", "-p", pid_text.as_str()])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let row = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if row.is_empty() {
+        return None;
+    }
+
+    let mut parts = row.split_whitespace();
+    let state = parts.next()?.to_string();
+    let command = parts.collect::<Vec<_>>().join(" ");
+    Some((state, command))
 }
 
 fn run_external_action(
