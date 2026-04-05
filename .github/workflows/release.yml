@@ -306,33 +306,46 @@ jobs:
   update-homebrew:
     name: Update Homebrew Tap
     needs: [release, publish]
-    if: ${{ !inputs.dry_run && secrets.HOMEBREW_OMNI_TAP_TOKEN != '' }}
+    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check tap repo exists
+      - name: Check token and tap repo
         id: tap
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_OMNI_TAP_TOKEN }}
         run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "reason=missing_token" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           if git ls-remote "https://github.com/${HOMEBREW_TAP_REPO}.git" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "reason=ok" >> "$GITHUB_OUTPUT"
           else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Homebrew tap repo ${HOMEBREW_TAP_REPO} not found; skipping formula update."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "reason=missing_repo" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Skip summary
-        if: ${{ steps.tap.outputs.exists != 'true' }}
+        if: ${{ steps.tap.outputs.ready != 'true' }}
         run: |
-          echo "- Homebrew update skipped (missing repo ${HOMEBREW_TAP_REPO})" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.tap.outputs.reason }}" = "missing_token" ]; then
+            echo "- Homebrew update skipped (missing HOMEBREW_OMNI_TAP_TOKEN secret)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Homebrew update skipped (missing repo ${HOMEBREW_TAP_REPO})" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Download artifacts
-        if: ${{ steps.tap.outputs.exists == 'true' }}
+        if: ${{ steps.tap.outputs.ready == 'true' }}
         uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
 
       - name: Compute SHA256
-        if: ${{ steps.tap.outputs.exists == 'true' }}
+        if: ${{ steps.tap.outputs.ready == 'true' }}
         id: sha
         run: |
           echo "macos_arm64=$(shasum -a 256 artifacts/omni-aarch64-apple-darwin.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
@@ -340,7 +353,7 @@ jobs:
           echo "linux_x86_64=$(shasum -a 256 artifacts/omni-x86_64-unknown-linux-gnu.tar.gz | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
       - name: Update formula
-        if: ${{ steps.tap.outputs.exists == 'true' }}
+        if: ${{ steps.tap.outputs.ready == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_OMNI_TAP_TOKEN }}
         run: |
