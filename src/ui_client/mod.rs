@@ -43,6 +43,8 @@ struct TranscribeUi {
     cfg: UiRuntimeConfig,
     state: UiState,
     aurora: AuroraRenderer,
+    #[cfg(target_os = "macos")]
+    native_window_visible: bool,
 }
 
 impl TranscribeUi {
@@ -54,6 +56,8 @@ impl TranscribeUi {
             state: UiState::new(now, cfg.idle_linger, PILL_WAVE_HEIGHT),
             cfg,
             aurora: AuroraRenderer::new(),
+            #[cfg(target_os = "macos")]
+            native_window_visible: false,
         }
     }
 
@@ -105,6 +109,20 @@ impl TranscribeUi {
             fill_state: self.state.transcript.fill_state,
         })
     }
+
+    #[cfg(target_os = "macos")]
+    fn sync_native_window_visibility(&mut self, window: &mut Window) {
+        let target_visible = self.state.visibility.visible;
+        if self.native_window_visible == target_visible {
+            return;
+        }
+
+        platform::macos::sync_window_visibility(window, target_visible);
+        self.native_window_visible = target_visible;
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    fn sync_native_window_visibility(&mut self, _window: &mut Window) {}
 }
 
 impl Render for TranscribeUi {
@@ -112,6 +130,7 @@ impl Render for TranscribeUi {
         let now = Instant::now();
         self.poll_inbound(now);
         self.tick_state(now, window);
+        self.sync_native_window_visibility(window);
         self.aurora.ensure_resources(window);
 
         // Keep animating while alive so we can drive transitions and consume socket events.
@@ -207,12 +226,13 @@ pub fn run() -> Result<()> {
         let mut rx_slot = Some(rx);
         let cfg_for_view = runtime_cfg.clone();
         let position_store_dir_for_window = position_store_dir.clone();
+        let show_window_on_create = !cfg!(target_os = "macos");
         let options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             display_id: Some(display.id()),
             titlebar: None,
             focus: false,
-            show: true,
+            show: show_window_on_create,
             kind: WindowKind::PopUp,
             is_movable: true,
             is_resizable: false,

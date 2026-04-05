@@ -70,6 +70,7 @@ pub struct UiState {
     pub transcript: TranscriptState,
     pub audio: AudioState,
     pub aurora: AuroraState,
+    pub accept_transcript_events: bool,
     pub last_frame: Instant,
 }
 
@@ -100,6 +101,7 @@ impl UiState {
                 wave_phase: 0.0,
             },
             aurora: AuroraState { time: 0.0 },
+            accept_transcript_events: true,
             last_frame: now,
         }
     }

@@ -16,6 +16,28 @@ pub fn set_activation_policy_accessory() {
     let _ = app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
 }
 
+pub fn sync_window_visibility(window: &Window, visible: bool) {
+    let _ = unsafe { sync_window_visibility_impl(window, visible) };
+}
+
+unsafe fn sync_window_visibility_impl(window: &Window, visible: bool) -> Result<(), ()> {
+    let handle = HasWindowHandle::window_handle(window).map_err(|_| ())?;
+    let RawWindowHandle::AppKit(raw) = handle.as_raw() else {
+        return Err(());
+    };
+
+    let ns_view = unsafe { (raw.ns_view.as_ptr() as *const NSView).as_ref() }.ok_or(())?;
+    let ns_window = ns_view.window().ok_or(())?;
+
+    if visible {
+        ns_window.orderFront(None);
+    } else {
+        ns_window.orderOut(None);
+    }
+
+    Ok(())
+}
+
 pub fn install_backdrop(window: &mut Window) {
     if unsafe { install_backdrop_impl(window) }.is_err() {
         window.set_background_appearance(WindowBackgroundAppearance::Blurred);

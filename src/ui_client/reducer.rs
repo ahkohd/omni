@@ -70,7 +70,7 @@ pub fn apply_event(
                 .and_then(|value| value.as_bool())
                 .unwrap_or(true);
         }
-        "transcript.delta" => {
+        "transcript.delta" if state.accept_transcript_events => {
             if let Some(preview) = event
                 .payload
                 .get("preview")
@@ -93,7 +93,8 @@ pub fn apply_event(
                 show(state, now);
             }
         }
-        "transcript.snapshot" => {
+        "transcript.delta" => {}
+        "transcript.snapshot" if state.accept_transcript_events => {
             if let Some(text) = event
                 .payload
                 .get("text")
@@ -105,6 +106,7 @@ pub fn apply_event(
                 show(state, now);
             }
         }
+        "transcript.snapshot" => {}
         _ => {}
     }
 }
@@ -113,6 +115,7 @@ pub fn show(state: &mut UiState, now: Instant) {
     state.visibility.visible = true;
     state.visibility.hide_deadline = None;
     state.visibility.idle_deadline = None;
+    state.accept_transcript_events = true;
     state.last_frame = now;
 }
 
@@ -120,6 +123,7 @@ pub fn hide_immediately(state: &mut UiState, now: Instant) {
     state.visibility.visible = false;
     state.visibility.hide_deadline = Some(now);
     state.visibility.panel_opacity = 0.0;
+    state.accept_transcript_events = false;
 }
 
 pub fn set_transcript(state: &mut UiState, text: &str) {
@@ -161,6 +165,7 @@ mod tests {
         );
 
         assert!(state.visibility.visible);
+        assert!(state.accept_transcript_events);
         assert_eq!(state.transcript.text, "hello world");
         assert!(state.transcript.should_scroll_to_bottom);
     }
@@ -187,6 +192,7 @@ mod tests {
         );
 
         assert!(!state.visibility.visible);
+        assert!(!state.accept_transcript_events);
         assert_eq!(state.transcript.text, "done");
         assert_eq!(state.visibility.hide_deadline, Some(now));
         assert_eq!(state.visibility.panel_opacity, 0.0);
@@ -214,5 +220,91 @@ mod tests {
         assert_eq!(state.transcript.text, "hello world");
         assert_eq!(state.transcript.bold_from, 5);
         assert!(state.visibility.visible);
+    }
+
+    #[test]
+    fn transcript_delta_after_hide_is_ignored() {
+        let now = Instant::now();
+        let mut state = UiState::new(now, Duration::from_secs(5), 40.0);
+        show(&mut state, now);
+
+        apply_event(
+            &mut state,
+            UiEventEnvelope {
+                v: 1,
+                seq: 1,
+                at_ms: 1,
+                event_type: "ui.hide".to_string(),
+                payload: serde_json::json!({}),
+            },
+            now,
+            Duration::from_millis(250),
+        );
+
+        apply_event(
+            &mut state,
+            UiEventEnvelope {
+                v: 1,
+                seq: 2,
+                at_ms: 2,
+                event_type: "transcript.delta".to_string(),
+                payload: serde_json::json!({"delta": " late"}),
+            },
+            now,
+            Duration::from_millis(250),
+        );
+
+        assert!(!state.visibility.visible);
+        assert!(!state.accept_transcript_events);
+        assert_eq!(state.transcript.text, "");
+    }
+
+    #[test]
+    fn transcript_events_resume_after_started_event() {
+        let now = Instant::now();
+        let mut state = UiState::new(now, Duration::from_secs(5), 40.0);
+
+        apply_event(
+            &mut state,
+            UiEventEnvelope {
+                v: 1,
+                seq: 1,
+                at_ms: 1,
+                event_type: "ui.hide".to_string(),
+                payload: serde_json::json!({}),
+            },
+            now,
+            Duration::from_millis(250),
+        );
+
+        apply_event(
+            &mut state,
+            UiEventEnvelope {
+                v: 1,
+                seq: 2,
+                at_ms: 2,
+                event_type: "transcribe.started".to_string(),
+                payload: serde_json::json!({}),
+            },
+            now,
+            Duration::from_millis(250),
+        );
+
+        apply_event(
+            &mut state,
+            UiEventEnvelope {
+                v: 1,
+                seq: 3,
+                at_ms: 3,
+                event_type: "transcript.snapshot".to_string(),
+                payload: serde_json::json!({"text": "hello again"}),
+            },
+            now,
+            Duration::from_millis(250),
+        );
+
+        assert!(state.visibility.visible);
+        assert!(state.accept_transcript_events);
+        assert_eq!(state.transcript.text, "hello again");
     }
 }
