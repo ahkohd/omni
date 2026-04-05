@@ -1,6 +1,6 @@
 {
   "name": "@ahkohd/omni-darwin-x64",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Prebuilt binaries for @ahkohd/omni (darwin x64)",
   "license": "MIT",
   "repository": {
