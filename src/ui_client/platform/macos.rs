@@ -30,9 +30,12 @@ unsafe fn sync_window_visibility_impl(window: &Window, visible: bool) -> Result<
     let ns_window = ns_view.window().ok_or(())?;
 
     if visible {
-        ns_window.orderFront(None);
+        ns_window.setIgnoresMouseEvents(false);
+        ns_window.setAlphaValue(1.0);
+        ns_window.orderFrontRegardless();
     } else {
-        ns_window.orderOut(None);
+        ns_window.setIgnoresMouseEvents(true);
+        ns_window.setAlphaValue(0.0);
     }
 
     Ok(())

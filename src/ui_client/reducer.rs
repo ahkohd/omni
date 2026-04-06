@@ -39,7 +39,11 @@ pub fn apply_event(
     _hide_linger: Duration,
 ) {
     match event.event_type.as_str() {
-        "ui.show" | "transcribe.started" => show(state, now),
+        "ui.show" => show(state, now),
+        "transcribe.started" => {
+            reset_transcript_for_new_session(state);
+            show(state, now);
+        }
         "ui.hide" | "transcribe.stopped" => {
             if let Some(transcript) = event
                 .payload
@@ -124,6 +128,13 @@ pub fn hide_immediately(state: &mut UiState, now: Instant) {
     state.visibility.hide_deadline = Some(now);
     state.visibility.panel_opacity = 0.0;
     state.accept_transcript_events = false;
+}
+
+pub fn reset_transcript_for_new_session(state: &mut UiState) {
+    state.transcript.text.clear();
+    state.transcript.bold_from = 0;
+    state.transcript.text_pulse = 1.0;
+    state.transcript.should_scroll_to_bottom = false;
 }
 
 pub fn set_transcript(state: &mut UiState, text: &str) {
@@ -263,6 +274,7 @@ mod tests {
     fn transcript_events_resume_after_started_event() {
         let now = Instant::now();
         let mut state = UiState::new(now, Duration::from_secs(5), 40.0);
+        state.transcript.text = "stale text".to_string();
 
         apply_event(
             &mut state,
@@ -290,6 +302,10 @@ mod tests {
             Duration::from_millis(250),
         );
 
+        assert!(state.visibility.visible);
+        assert!(state.accept_transcript_events);
+        assert_eq!(state.transcript.text, "");
+
         apply_event(
             &mut state,
             UiEventEnvelope {
@@ -303,8 +319,6 @@ mod tests {
             Duration::from_millis(250),
         );
 
-        assert!(state.visibility.visible);
-        assert!(state.accept_transcript_events);
         assert_eq!(state.transcript.text, "hello again");
     }
 }
