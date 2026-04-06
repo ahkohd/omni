@@ -49,12 +49,12 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
   // -- Blobby uneven top edge — like audio amplitude peaks --
   // Multiple overlapping bumps at different scales, all moving.
   let base_h_default = 0.14 + e * 0.35;
-  let base_h_full = 0.85 + e * 0.15; 
+  let base_h_full = 0.85 + e * 0.15;
   let base_h = mix(base_h_default, base_h_full, b0.fill_ratio);
-  
+
   // We no longer multiply t by spd directly because t (b0.time) is already exponentially integrated with audio speed in Rust!
   // Removing it avoids massive derivative phase jumps (stalling) during volume spikes.
-  
+
   // Audio-driven X-warp for erratic, aquatic horizontal swimming!
   let x_shift = e * 0.08;
 
@@ -64,14 +64,14 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     + sin((x + sin(t * 7.4) * x_shift) * 16.0 + t * 1.1) * 0.12
     + sin((x - cos(t * 2.3) * x_shift) * 3.5  - t * 0.4) * 0.20
     + sin((x + sin(t * 5.5) * x_shift) * 7.0  + t * 0.7) * 0.16;
-  
+
   // Normalize raw bumps cleanly between 0 and 1
   let bump_norm = clamp(raw_bumps * 0.5 + 0.5, 0.0, 1.0);
 
   // Center convergence: Reduce horizontal squishing
-  let cx = (x - 0.5) * 2.0; 
-  let center_weight = 1.0 - cx * cx; 
-  let convergence = mix(1.0, center_weight, e * 0.25); 
+  let cx = (x - 0.5) * 2.0;
+  let center_weight = 1.0 - cx * cx;
+  let convergence = mix(1.0, center_weight, e * 0.25);
 
   // Make bumps physically splash higher based on audio energy
   let dynamic_bump_amp = 1.0 + e * 1.5;
@@ -94,7 +94,7 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
   let back_bump_norm = clamp(back_bumps * 0.5 + 0.5, 0.0, 1.0);
   let back_dynamic = back_bump_norm * (1.0 - valley) * dynamic_bump_amp;
   let back_local_h = base_h * 1.15 * (valley + back_dynamic) * convergence;
-  
+
   let back_v = y / max(back_local_h, 0.001);
   let back_glow = clamp(1.0 - back_v, 0.0, 1.0) * clamp(1.0 - back_v, 0.0, 1.0) * 0.45; // dimmer
 
@@ -121,26 +121,29 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
   let sat = 0.65 + e * 0.6;
   let brightness = 1.0 + e * 0.35;
 
-  // Modern Cyber-Palette with Hue Shifting during high energy
-  let col_blue    = vec3<f32>(0.12, 0.22, 0.95) * sat * brightness; 
-  let col_magenta = mix(vec3<f32>(0.85, 0.12, 0.58), vec3<f32>(1.0, 0.20, 0.85), e) * sat * brightness; 
-  let col_cyan    = mix(vec3<f32>(0.12, 0.85, 0.92), vec3<f32>(0.60, 1.0, 1.0), e) * sat * brightness; 
-  let col_purple  = vec3<f32>(0.42, 0.08, 0.82) * sat * brightness;
+  // Palette extracted from hex keys
+  let c0 = vec3<f32>(0.949, 0.208, 0.482) * sat * brightness; // Pink #F2357B
+  let c1 = vec3<f32>(0.949, 0.467, 0.918) * sat * brightness; // Lavender #F277EA
+  let c2 = vec3<f32>(0.604, 0.553, 0.949) * sat * brightness; // Purple #9A8DF2
+  let c3 = vec3<f32>(0.949, 0.569, 0.239) * sat * brightness; // Orange #F2913D
+  let c4 = vec3<f32>(0.949, 0.392, 0.267) * sat * brightness; // Coral #F26444
 
-  let p4 = phase * 4.0;
-  let seg = u32(p4) % 4u;
-  let f = fract(p4);
+  let p5 = phase * 5.0;
+  let seg = u32(p5) % 5u;
+  let f = fract(p5);
   let sf = f * f * (3.0 - 2.0 * f);
 
   var color: vec3<f32>;
   if (seg == 0u) {
-    color = mix(col_blue, col_magenta, sf);
+    color = mix(c0, c1, sf);
   } else if (seg == 1u) {
-    color = mix(col_magenta, col_cyan, sf);
+    color = mix(c1, c2, sf);
   } else if (seg == 2u) {
-    color = mix(col_cyan, col_purple, sf);
+    color = mix(c2, c3, sf);
+  } else if (seg == 3u) {
+    color = mix(c3, c4, sf);
   } else {
-    color = mix(col_purple, col_blue, sf);
+    color = mix(c4, c0, sf);
   }
 
   // -- FILM GRAIN OVERLAY --
