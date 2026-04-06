@@ -3,17 +3,29 @@ use objc2::{MainThreadMarker, MainThreadOnly, runtime::AnyClass};
 use objc2_app_kit::{
     NSApplication, NSApplicationActivationPolicy, NSAutoresizingMaskOptions, NSColor,
     NSGlassEffectView, NSGlassEffectViewStyle, NSView, NSVisualEffectBlendingMode,
-    NSVisualEffectMaterial, NSVisualEffectState, NSVisualEffectView, NSWindowOrderingMode,
+    NSVisualEffectMaterial, NSVisualEffectState, NSVisualEffectView, NSWindowAnimationBehavior,
+    NSWindowOrderingMode,
 };
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
-pub fn set_activation_policy_accessory() {
-    let Some(mtm) = MainThreadMarker::new() else {
-        return;
-    };
-
+pub fn current_activation_policy() -> Option<NSApplicationActivationPolicy> {
+    let mtm = MainThreadMarker::new()?;
     let app = NSApplication::sharedApplication(mtm);
-    let _ = app.setActivationPolicy(NSApplicationActivationPolicy::Accessory);
+    Some(app.activationPolicy())
+}
+
+pub fn set_activation_policy_accessory() -> Option<bool> {
+    set_activation_policy(NSApplicationActivationPolicy::Accessory)
+}
+
+pub fn set_activation_policy_prohibited() -> Option<bool> {
+    set_activation_policy(NSApplicationActivationPolicy::Prohibited)
+}
+
+pub fn set_activation_policy(policy: NSApplicationActivationPolicy) -> Option<bool> {
+    let mtm = MainThreadMarker::new()?;
+    let app = NSApplication::sharedApplication(mtm);
+    Some(app.setActivationPolicy(policy))
 }
 
 pub fn sync_window_visibility(window: &Window, visible: bool) {
@@ -35,7 +47,7 @@ unsafe fn sync_window_visibility_impl(window: &Window, visible: bool) -> Result<
         ns_window.orderFrontRegardless();
     } else {
         ns_window.setIgnoresMouseEvents(true);
-        ns_window.setAlphaValue(0.0);
+        ns_window.orderOut(None);
     }
 
     Ok(())
@@ -84,6 +96,7 @@ unsafe fn install_backdrop_impl(window: &Window) -> Result<(), ()> {
         host_view.addSubview_positioned_relativeTo(&visual, NSWindowOrderingMode::Below, None);
     }
 
+    ns_window.setAnimationBehavior(NSWindowAnimationBehavior::DocumentWindow);
     ns_window.setOpaque(false);
     ns_window.setMovableByWindowBackground(true);
     ns_window.setHasShadow(true);

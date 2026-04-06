@@ -127,14 +127,7 @@ impl TranscribeUi {
 
 impl Render for TranscribeUi {
     fn render(&mut self, window: &mut Window, _cx: &mut UiContext<Self>) -> impl IntoElement {
-        let now = Instant::now();
-        self.poll_inbound(now);
-        self.tick_state(now, window);
-        self.sync_native_window_visibility(window);
         self.aurora.ensure_resources(window);
-
-        // Keep animating while alive so we can drive transitions and consume socket events.
-        window.request_animation_frame();
 
         let mut root = div().id("transcribe-ui-root").size_full();
 
@@ -151,7 +144,6 @@ impl Render for TranscribeUi {
             .relative()
             .size_full()
             .overflow_hidden()
-            .opacity(self.state.visibility.panel_opacity)
             .child(self.render_aurora_overlay())
             .child(
                 div()
@@ -204,7 +196,7 @@ pub fn run() -> Result<()> {
 
         #[cfg(target_os = "macos")]
         {
-            platform::macos::set_activation_policy_accessory();
+            let _ = platform::macos::set_activation_policy_accessory();
         }
 
         let Some(display) = cx
@@ -241,46 +233,83 @@ pub fn run() -> Result<()> {
             ..Default::default()
         };
 
-        if cx
-            .open_window(options, move |window, cx| {
-                #[cfg(target_os = "macos")]
-                {
-                    platform::macos::install_backdrop(window);
-                }
+        #[cfg(target_os = "macos")]
+        let original_activation_policy = {
+            let original = platform::macos::current_activation_policy();
+            let _ = platform::macos::set_activation_policy_prohibited();
+            original
+        };
 
-                let receiver = rx_slot.take().expect("ui receiver should be available");
-                let cfg = cfg_for_view.clone();
-                let position_dir_for_observer = position_store_dir_for_window.clone();
+        let open_result = cx.open_window(options, move |window, cx| {
+            #[cfg(target_os = "macos")]
+            {
+                platform::macos::install_backdrop(window);
+            }
 
-                cx.new(move |cx| {
-                    cx.observe_window_bounds(window, move |_, window, cx| {
-                        let window_bounds = window.bounds();
-                        let center = window_bounds.center();
+            let receiver = rx_slot.take().expect("ui receiver should be available");
+            let cfg = cfg_for_view.clone();
+            let position_dir_for_observer = position_store_dir_for_window.clone();
 
-                        let visible = cx
-                            .displays()
-                            .into_iter()
-                            .map(|display| display.visible_bounds())
-                            .find(|bounds| contains(*bounds, center))
-                            .or_else(|| {
-                                cx.primary_display().map(|display| display.visible_bounds())
-                            })
-                            .unwrap_or(window_bounds);
+            cx.new(move |cx| {
+                cx.observe_window_bounds(window, move |_, window, cx| {
+                    let window_bounds = window.bounds();
+                    let center = window_bounds.center();
 
-                        if let Some(normalized) = normalize_center(window_bounds, visible) {
-                            save_position(&position_dir_for_observer, normalized);
-                        }
-                    })
-                    .detach();
+                    let visible = cx
+                        .displays()
+                        .into_iter()
+                        .map(|display| display.visible_bounds())
+                        .find(|bounds| contains(*bounds, center))
+                        .or_else(|| cx.primary_display().map(|display| display.visible_bounds()))
+                        .unwrap_or(window_bounds);
 
-                    TranscribeUi::new(receiver, cfg)
+                    if let Some(normalized) = normalize_center(window_bounds, visible) {
+                        save_position(&position_dir_for_observer, normalized);
+                    }
                 })
+                .detach();
+
+                TranscribeUi::new(receiver, cfg)
             })
-            .is_err()
+        });
+
+        #[cfg(target_os = "macos")]
         {
+            if let Some(policy) = original_activation_policy {
+                let _ = platform::macos::set_activation_policy(policy);
+            } else {
+                let _ = platform::macos::set_activation_policy_accessory();
+            }
+        }
+
+        let Ok(window_handle) = open_result else {
             cx.quit();
             return;
-        }
+        };
+
+        let driver_window_handle = window_handle;
+        cx.spawn(async move |cx| {
+            loop {
+                cx.background_executor()
+                    .timer(Duration::from_millis(16))
+                    .await;
+
+                let now = Instant::now();
+                let updated = driver_window_handle
+                    .update(cx, |ui, window, _cx| {
+                        ui.poll_inbound(now);
+                        ui.tick_state(now, window);
+                        ui.sync_native_window_visibility(window);
+                        window.refresh();
+                    })
+                    .is_ok();
+
+                if !updated {
+                    break;
+                }
+            }
+        })
+        .detach();
 
         cx.activate(false);
     });
