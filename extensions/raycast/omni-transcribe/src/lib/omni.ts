@@ -26,9 +26,11 @@ const PLATFORM_PACKAGES: Record<string, string> = {
   "win32-x64": "@ahkohd/omni-win32-x64-msvc",
 };
 
-interface OmniPreferences {
+type StopMode = "insert" | "copy" | "";
+
+interface Preferences {
   omniBinary?: string;
-  stopMode?: string;
+  stopMode?: StopMode;
 }
 
 let resolvedBinary: string | null = null;
@@ -65,9 +67,9 @@ export async function findOmniBinary(): Promise<string> {
     return resolvedBinary;
   }
 
-  const prefs = getPreferenceValues<OmniPreferences>();
+  const prefs = getPreferenceValues<Preferences>();
   if (prefs.omniBinary?.trim()) {
-    resolvedBinary = prefs.omniBinary.trim()!;
+    resolvedBinary = prefs.omniBinary.trim();
     return resolvedBinary;
   }
 
@@ -196,9 +198,9 @@ export interface DoctorCheck {
   detail: string;
 }
 
-export function getStopMode(): string {
-  const prefs = getPreferenceValues<OmniPreferences>();
-  return prefs.stopMode || "insert";
+export function getStopMode(): StopMode {
+  const prefs = getPreferenceValues<Preferences>();
+  return prefs.stopMode ?? "insert";
 }
 
 export function getErrorMessage(error: unknown): string {
