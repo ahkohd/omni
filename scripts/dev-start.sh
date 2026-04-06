@@ -8,6 +8,10 @@ RUNTIME_DIR="${OMNI_RUNTIME_DIR:-$ROOT_DIR/.run}"
 export OMNI_RUNTIME_DIR="$RUNTIME_DIR"
 mkdir -p "$OMNI_RUNTIME_DIR"
 
+if [[ -d "$HOME/.cargo/bin" ]]; then
+  export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
 echo "[omni] building all binaries..."
 cargo build --bins
 

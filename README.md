@@ -99,6 +99,7 @@ Built-in actions:
 - `paste` — paste into focused app
 - `stash` — save current clipboard before overwriting
 - `unstash` — restore previously stashed clipboard
+- `sleep <ms>` — pause hook execution for N milliseconds
 
 ### Hook recipes
 
@@ -111,7 +112,7 @@ stop = ["hide_ui", "copy"]
 stop_copy = ["copy"]
 
 # default insert mode (clipboard-safe)
-stop_insert = ["hide_ui", "stash", "copy", "paste", "unstash"]
+stop_insert = ["hide_ui", "stash", "copy", "paste", "sleep 120", "unstash"]
 
 # custom mode via script
 stop_slack = ["./hooks/slack-send.sh"]
@@ -136,7 +137,7 @@ channels = 1
 [event.hooks.transcribe]
 start = ["show_ui"]
 stop = ["hide_ui", "copy"]
-stop_insert = ["hide_ui", "stash", "copy", "paste", "unstash"]
+stop_insert = ["hide_ui", "stash", "copy", "paste", "sleep 120", "unstash"]
 ```
 
 ```bash

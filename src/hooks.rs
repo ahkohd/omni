@@ -202,7 +202,13 @@ fn execute_actions(
             "restore" => {
                 bail!("builtin action 'restore' was renamed to 'unstash'");
             }
-            _ => run_external_action(action, event, mode, transcript, &timestamp)?,
+            _ => {
+                if let Some(duration) = parse_sleep_action(action)? {
+                    thread::sleep(duration);
+                } else {
+                    run_external_action(action, event, mode, transcript, &timestamp)?;
+                }
+            }
         }
     }
 
@@ -210,6 +216,31 @@ fn execute_actions(
         event: event.to_string(),
         actions_ran: actions,
     })
+}
+
+fn parse_sleep_action(action: &str) -> Result<Option<Duration>> {
+    let mut parts = action.split_whitespace();
+    let Some(name) = parts.next() else {
+        return Ok(None);
+    };
+
+    if name != "sleep" {
+        return Ok(None);
+    }
+
+    let Some(raw_ms) = parts.next() else {
+        bail!("builtin action '{name}' requires milliseconds (e.g. \"sleep 120\")");
+    };
+
+    if parts.next().is_some() {
+        bail!("builtin action '{name}' accepts exactly one millisecond value");
+    }
+
+    let millis = raw_ms
+        .parse::<u64>()
+        .with_context(|| format!("invalid millisecond value for '{name}': {raw_ms}"))?;
+
+    Ok(Some(Duration::from_millis(millis)))
 }
 
 fn ensure_default_ui_client_running() -> Result<()> {
@@ -513,5 +544,30 @@ mod tests {
         .expect("set should work");
 
         assert!(validate_hook_config(&config).is_err());
+    }
+
+    #[test]
+    fn parse_sleep_action_supports_builtin_sleep() {
+        let duration = parse_sleep_action("sleep 120")
+            .expect("sleep action should parse")
+            .expect("sleep action should be recognized");
+
+        assert_eq!(duration, Duration::from_millis(120));
+    }
+
+    #[test]
+    fn parse_sleep_action_ignores_non_sleep_actions() {
+        assert!(
+            parse_sleep_action("copy")
+                .expect("copy should not fail")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn parse_sleep_action_rejects_missing_or_invalid_values() {
+        assert!(parse_sleep_action("sleep").is_err());
+        assert!(parse_sleep_action("sleep nope").is_err());
+        assert!(parse_sleep_action("sleep 10 extra").is_err());
     }
 }

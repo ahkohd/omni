@@ -63,6 +63,7 @@ pub fn default_config() -> Value {
             Value::String("stash".into()),
             Value::String("copy".into()),
             Value::String("paste".into()),
+            Value::String("sleep 120".into()),
             Value::String("unstash".into()),
         ]),
     );
