@@ -368,7 +368,7 @@ jobs:
           mkdir -p Formula
           cat > Formula/omni.rb << 'FORMULA'
           class Omni < Formula
-            desc "CLI for realtime transcription"
+            desc "Real-time CLI transcription tool"
             homepage "https://github.com/ahkohd/omni"
             version "VERSION_PLACEHOLDER"
             license "MIT"

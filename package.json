@@ -1,7 +1,7 @@
 {
   "name": "@ahkohd/omni",
   "version": "0.1.5",
-  "description": "A CLI for realtime transcription.",
+  "description": "A real-time CLI transcription tool.",
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@ahkohd/omni.svg)](https://www.npmjs.com/package/@ahkohd/omni)
 
-A CLI for realtime transcription.
+A real-time CLI transcription tool.
 
 ## Install
 
@@ -75,9 +75,13 @@ cmd + alt - c : omni transcribe stop copy
 cmd + alt - i : omni transcribe stop insert
 ```
 
-### Raycast / Hammerspoon
+### Raycast extension
 
-Use one action for start and one for stop mode:
+Extension docs: [Raycast extension README](extensions/raycast/omni/README.md)
+
+### Raycast / Hammerspoon (scripted)
+
+If you prefer your own launcher actions, use one action for start and one for stop mode:
 
 ```bash
 omni transcribe start --background

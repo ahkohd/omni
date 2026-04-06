@@ -1,11 +1,7 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
-#[command(
-    name = "omni",
-    version,
-    about = "Tiny keybind-first realtime transcription CLI"
-)]
+#[command(name = "omni", version, about = "A real-time CLI transcription tool")]
 pub struct Cli {
     /// Emit machine-readable output where supported.
     #[arg(long, global = true)]

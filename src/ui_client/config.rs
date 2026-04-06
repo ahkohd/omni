@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use clap::Parser;
 
-pub const DEFAULT_IDLE_MS: u64 = 10_000;
+pub const DEFAULT_IDLE_MS: u64 = 30_000;
 pub const DEFAULT_HIDE_MS: u64 = 250;
 pub const DEFAULT_RETRY_MS: u64 = 220;
 
